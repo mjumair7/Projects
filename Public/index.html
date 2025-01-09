@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task List</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>My Task List</h1>
+    <form id="taskForm">
+      <input type="text" id="taskInput" placeholder="Add a new task..." required>
+      <button type="submit">Add Task</button>
+    </form>
+    <ul id="taskList"></ul>
+  </div>
+
+  <script>
+    const taskList = document.getElementById('taskList');
+    const taskForm = document.getElementById('taskForm');
+    const taskInput = document.getElementById('taskInput');
+
+    // Fetch initial tasks
+    fetch('/tasks')
+      .then(response => response.json())
+      .then(tasks => {
+        tasks.forEach((task, index) => addTaskToDOM(task, index));
+      });
+
+    // Handle form submission
+    taskForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const task = taskInput.value;
+      fetch('/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task })
+      })
+        .then(response => response.json())
+        .then(({ task, index }) => addTaskToDOM(task, index));
+
+      taskInput.value = '';
+    });
+
+    // Add a task to the DOM
+    function addTaskToDOM(task, index) {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        ${task}
+        <button onclick="deleteTask(${index})">🗑️</button>
+      `;
+      taskList.appendChild(li);
+    }
+
+    // Delete a task
+    function deleteTask(index) {
+      fetch(`/tasks/${index}`, { method: 'DELETE' })
+        .then(() => {
+          taskList.innerHTML = '';
+          fetch('/tasks')
+            .then(response => response.json())
+            .then(tasks => {
+              tasks.forEach((task, index) => addTaskToDOM(task, index));
+            });
+        });
+    }
+  </script>
+</body>
+</html>
